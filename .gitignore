@@ -44,3 +44,4 @@ htmlcov/
 # Output files (students should commit these)
 # part1_results.txt
 # part2_results.txt
+mcp-gateway-registry/
