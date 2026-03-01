@@ -13,6 +13,7 @@ The router sends queries to:
 import glob
 import json
 import os
+import re
 
 import pandas as pd
 
@@ -222,42 +223,70 @@ def retrieve_from_text(question: str, text_hint: str) -> str:
     """
     txt_files = _get_txt_files()
     hint_lower = (text_hint or "").lower()
-    search_text = hint_lower + " " + question.lower()
 
-    # Score each file by keyword overlap
-    file_scores = []
+    # Only strip routing instruction words from the hint — product domain words
+    # (quality, review, fryer, etc.) are kept and weighted by IDF below.
+    _routing_noise = {
+        "search", "find", "look", "file", "files", "keyword", "keywords",
+        "page", "pages", "using", "also", "then", "them", "like",
+    }
+    question_clean = re.sub(r"[^\w\s]", " ", question.lower())
+    hint_clean = re.sub(r"[^\w\s]", " ", hint_lower)
+
+    q_words = [w for w in question_clean.split() if len(w) > 3 and w not in _routing_noise]
+    h_words = [
+        w for w in hint_clean.split()
+        if len(w) > 3
+        and w not in _routing_noise
+        and not w.endswith("_product_page")  # drop bare SKU filename tokens
+    ]
+    score_words = list(set(q_words + h_words))
+
+    # Read all files once
+    file_data = []
     for filepath in txt_files:
         with open(filepath, "r") as f:
             content = f.read()
-        score = sum(
-            1 for word in search_text.split()
-            if len(word) > 3 and word in content.lower()
-        )
+        file_data.append((filepath, content))
+
+    n_docs = len(file_data)
+
+    # IDF weighting: log(1 + N/(df+1))
+    # Rare words (appear in 1-2 files) get high weight ~1.6-1.8
+    # Universal words (appear in all 10 files) get low weight ~0.6
+    # This automatically down-weights generic boilerplate like "customer", "review"
+    from math import log as _log
+    idf = {}
+    for w in score_words:
+        df = sum(1 for _, c in file_data if w in c.lower())
+        idf[w] = _log(1 + n_docs / (df + 1))
+
+    # Score each file: sum of IDF values for matching score words
+    file_scores = []
+    for filepath, content in file_data:
+        content_lower = content.lower()
+        score = sum(idf[w] for w in score_words if w in content_lower)
         file_scores.append((score, filepath, content))
 
     file_scores.sort(key=lambda x: x[0], reverse=True)
 
-    # Collect content from top relevant files up to char limit
-    context_parts = []
-    chars_used = 0
+    # Distribute char budget evenly across top-5 relevant files.
+    # Equal budget ensures "compare across products" queries (Q5) see multiple pages,
+    # while specific queries (Q3/Q4) still rank the most relevant file first.
     char_limit = MAX_CONTEXT_CHARS // 2
+    relevant = [t for t in file_scores if t[0] > 0.1]
+    if not relevant:
+        relevant = file_scores[:3]  # fallback when no words discriminate
 
-    for score, filepath, content in file_scores:
-        if score == 0 and context_parts:
-            break
-        if chars_used >= char_limit:
-            break
+    top_files = relevant[:5]
+    per_file = char_limit // len(top_files)
+
+    context_parts = []
+    for score, filepath, content in top_files:
         filename = os.path.basename(filepath)
-        available = char_limit - chars_used
-        chunk = content[:available]
-        context_parts.append(f"=== File: {filename} (relevance score: {score}) ===\n{chunk}")
-        chars_used += len(chunk)
-
-    if not context_parts:
-        # Fallback: return first 2 files
-        for _, filepath, content in file_scores[:2]:
-            filename = os.path.basename(filepath)
-            context_parts.append(f"=== File: {filename} ===\n{content[:2000]}")
+        context_parts.append(
+            f"=== File: {filename} (relevance score: {score:.2f}) ===\n{content[:per_file]}"
+        )
 
     return "\n\n".join(context_parts)
 
