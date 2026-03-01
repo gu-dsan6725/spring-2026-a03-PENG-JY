@@ -224,20 +224,30 @@ def retrieve_from_text(question: str, text_hint: str) -> str:
     txt_files = _get_txt_files()
     hint_lower = (text_hint or "").lower()
 
-    # Only strip routing instruction words from the hint — product domain words
-    # (quality, review, fryer, etc.) are kept and weighted by IDF below.
-    _routing_noise = {
+    # Noise words that appear in every product page and don't discriminate between
+    # files.  We strip them from both the question and hint before building score_words.
+    _noise = {
+        # routing instruction words
         "search", "find", "look", "file", "files", "keyword", "keywords",
         "page", "pages", "using", "also", "then", "them", "like",
+        # generic English function / linking words
+        "about", "what", "that", "this", "with", "from", "their", "there",
+        "these", "those", "have", "been", "will", "which", "well", "want",
+        # e-commerce boilerplate present in every product page
+        "product", "products", "customer", "customers", "review", "reviews",
+        "rating", "ratings", "highly", "rated", "recommend", "high",
+        "quality", "brand", "category", "price", "determine",
+        # geographic / sales query terms (not product content)
+        "region", "sells", "west", "east", "north", "south", "central",
     }
     question_clean = re.sub(r"[^\w\s]", " ", question.lower())
     hint_clean = re.sub(r"[^\w\s]", " ", hint_lower)
 
-    q_words = [w for w in question_clean.split() if len(w) > 3 and w not in _routing_noise]
+    q_words = [w for w in question_clean.split() if len(w) > 3 and w not in _noise]
     h_words = [
         w for w in hint_clean.split()
         if len(w) > 3
-        and w not in _routing_noise
+        and w not in _noise
         and not w.endswith("_product_page")  # drop bare SKU filename tokens
     ]
     score_words = list(set(q_words + h_words))
@@ -252,16 +262,15 @@ def retrieve_from_text(question: str, text_hint: str) -> str:
     n_docs = len(file_data)
 
     # IDF weighting: log(1 + N/(df+1))
-    # Rare words (appear in 1-2 files) get high weight ~1.6-1.8
-    # Universal words (appear in all 10 files) get low weight ~0.6
-    # This automatically down-weights generic boilerplate like "customer", "review"
+    # Rare words (1-2 files) → weight ~1.6-1.8  (true product discriminators)
+    # Universal words (all 10 files) → weight ~0.06  (still generic even after noise filter)
     from math import log as _log
     idf = {}
     for w in score_words:
         df = sum(1 for _, c in file_data if w in c.lower())
         idf[w] = _log(1 + n_docs / (df + 1))
 
-    # Score each file: sum of IDF values for matching score words
+    # Score each file: sum of IDF values for matching words
     file_scores = []
     for filepath, content in file_data:
         content_lower = content.lower()
@@ -270,23 +279,37 @@ def retrieve_from_text(question: str, text_hint: str) -> str:
 
     file_scores.sort(key=lambda x: x[0], reverse=True)
 
-    # Distribute char budget evenly across top-5 relevant files.
-    # Equal budget ensures "compare across products" queries (Q5) see multiple pages,
-    # while specific queries (Q3/Q4) still rank the most relevant file first.
+    # Determine if there are STRONG discriminating words (IDF ≥ 1.0 in at least one file).
+    max_matching_idf = max(
+        (idf[w] for w in score_words if any(w in c.lower() for _, c in file_data)),
+        default=0.0,
+    )
+
     char_limit = MAX_CONTEXT_CHARS // 2
-    relevant = [t for t in file_scores if t[0] > 0.1]
-    if not relevant:
-        relevant = file_scores[:3]  # fallback when no words discriminate
 
-    top_files = relevant[:5]
-    per_file = char_limit // len(top_files)
+    def _front_back(text: str, n: int) -> str:
+        """Return first n//2 chars + last n//2 chars of text (captures description + reviews)."""
+        if len(text) <= n:
+            return text
+        half = n // 2
+        return text[:half] + text[-half:]
 
-    context_parts = []
-    for score, filepath, content in top_files:
-        filename = os.path.basename(filepath)
-        context_parts.append(
-            f"=== File: {filename} (relevance score: {score:.2f}) ===\n{content[:per_file]}"
-        )
+    if max_matching_idf >= 1.0:
+        # Specific query (Q3/Q4/Q6): rank by discriminating keywords, top-5 files.
+        top_files = [t for t in file_scores if t[0] > 0.1][:5] or file_scores[:3]
+        per_file = char_limit // len(top_files)
+        context_parts = [
+            f"=== File: {os.path.basename(fp)} (score: {s:.2f}) ===\n{_front_back(c, per_file)}"
+            for s, fp, c in top_files
+        ]
+    else:
+        # Comparative query (Q5: "best reviews"): no clear discriminator — show all
+        # files with front+back sampling so LLM can compare ratings across products.
+        per_file = char_limit // n_docs
+        context_parts = [
+            f"=== File: {os.path.basename(fp)} (score: {s:.2f}) ===\n{_front_back(c, per_file)}"
+            for s, fp, c in file_scores
+        ]
 
     return "\n\n".join(context_parts)
 
