@@ -9,7 +9,6 @@ cat, tree) instead of vector search, then passes the output to an LLM.
 """
 
 import json
-import os
 import subprocess
 
 from src.config import GROQ_MODEL, MAX_CONTEXT_CHARS, REPO_PATH, get_client
@@ -69,19 +68,6 @@ def execute_bash(command: str, max_chars: int = MAX_CONTEXT_CHARS) -> str:
 
 # ── Module 2: Query router ─────────────────────────────────────────────────────
 
-def _sanitize_commands(commands: list) -> list:
-    """Replace disallowed or broken commands with safe equivalents."""
-    sanitized = []
-    for cmd in commands:
-        # tree is not installed — replace with find
-        if "tree " in cmd:
-            cmd = (
-                f"find {REPO_PATH} -maxdepth 3 -type f | sort | head -60"
-            )
-        sanitized.append(cmd)
-    return sanitized
-
-
 def classify_query(question: str) -> dict:
     """
     Use the LLM to classify the question and generate bash commands for retrieval.
@@ -99,75 +85,36 @@ to run to retrieve the most relevant information from the repository.
 
 Repository path: {REPO_PATH}
 
-CRITICAL RULES:
-- NEVER use the `tree` command — it is not installed. Use `find` instead.
-- Return ONLY valid JSON with no markdown fences, no extra text.
-- Maximum 5 commands, each directly executable in a terminal.
-
 Available tools:
-- find: locate files by name, extension, or depth
+- tree: show directory structure
+- find: locate files by name or extension
 - cat: read file contents
-- grep: search for patterns inside files (always use --include to filter file types)
+- grep: search for patterns inside files
 
-=== FEW-SHOT EXAMPLES ===
-
-Example 1 — entry_point question:
-Q: "What is the main entry point file for the registry service?"
-A:
-{{
-    "query_type": "entry_point",
-    "reasoning": "Search for uvicorn calls and FastAPI app init to locate the registry service entry point.",
-    "commands": [
-        "grep -r 'uvicorn' {REPO_PATH} --include='*.py' --include='*.sh' -l",
-        "find {REPO_PATH}/registry -name 'main.py'",
-        "cat {REPO_PATH}/registry/main.py | head -60"
-    ]
-}}
-
-Example 2 — structure/file-type question:
-Q: "What programming languages and file types are used in this repository?"
-A:
-{{
-    "query_type": "structure",
-    "reasoning": "Enumerate file extensions across the whole repo to identify all languages and file types.",
-    "commands": [
-        "find {REPO_PATH} -type f | sed 's/.*\\.//' | sort | uniq -c | sort -rn | head -20",
-        "find {REPO_PATH} -maxdepth 3 -type f | sort | head -60"
-    ]
-}}
-
-Example 3 — dependency question:
-Q: "What Python dependencies does this project use?"
-A:
-{{
-    "query_type": "dependency",
-    "reasoning": "Read pyproject.toml and any package.json to find declared dependencies.",
-    "commands": [
-        "cat {REPO_PATH}/pyproject.toml",
-        "cat {REPO_PATH}/package.json 2>/dev/null || echo 'no package.json'"
-    ]
-}}
-
-=== END EXAMPLES ===
-
-Additional hints by query type:
-- entry_point : registry service starts with uvicorn in registry/main.py — NOT credentials-provider/ OAuth scripts
-- structure   : use find + sed to count extensions; never use tree
-- code_search : grep for keywords then cat the relevant files
-- documentation: find {REPO_PATH}/docs -name "*.md" | xargs grep -l keyword | head -5
-- multi       : combine grep, find, cat across code and docs
+Query type hints:
+- dependency     → cat pyproject.toml, cat package.json
+- structure      → tree -L 3, find with extension filters
+- code_search    → grep for keywords + cat relevant files
+- documentation  → find docs/ + cat markdown files
+- multi          → combine grep, find, cat across code and docs
 
 User question: {question}
 
 Return ONLY valid JSON (no markdown, no extra text):
 {{
-    "query_type": "dependency | structure | entry_point | code_search | documentation | multi",
+    "query_type": "dependency | structure | code_search | documentation | multi",
     "reasoning": "one sentence explaining the chosen strategy",
     "commands": [
         "bash command 1",
         "bash command 2"
     ]
 }}
+
+Rules:
+- Maximum 5 commands
+- Each command must be directly executable in a terminal
+- Use --include filters with grep to target specific file types
+- For complex questions, first grep to find relevant files, then cat those files
 """
 
     response = client.chat.completions.create(
@@ -186,18 +133,16 @@ Return ONLY valid JSON (no markdown, no extra text):
             raw = raw[4:]
 
     try:
-        result = json.loads(raw)
-        result["commands"] = _sanitize_commands(result.get("commands", []))
-        return result
+        return json.loads(raw)
     except json.JSONDecodeError:
         print(f"[Warning] Router JSON parse failed, using fallback.\nRaw: {raw}")
         return {
             "query_type": "multi",
             "reasoning": "JSON parse failed, using fallback",
-            "commands": _sanitize_commands([
-                f"find {REPO_PATH} -maxdepth 3 -type f | sort | head -60",
-                f"grep -rl '{question[:40]}' {REPO_PATH} --include='*.py' --include='*.md' 2>/dev/null | head -10",
-            ]),
+            "commands": [
+                f"tree {REPO_PATH} -L 3 2>/dev/null",
+                f"grep -r '{question[:40]}' {REPO_PATH} --include='*.py' --include='*.md' -l 2>/dev/null | head -10",
+            ],
         }
 
 
@@ -215,16 +160,6 @@ def retrieve_context(classification: dict) -> str:
     """
     context_parts = []
     commands = classification.get("commands", [])
-
-    # Warn early if the repo path doesn't exist — commands will silently return nothing
-    if not os.path.isdir(REPO_PATH):
-        warning = (
-            f"[WARNING] Repository path '{REPO_PATH}' does not exist on disk. "
-            "All bash commands will likely return empty output. "
-            "Please clone the repository first."
-        )
-        print(warning)
-        context_parts.append(warning)
 
     print(f"[Router] Query type : {classification.get('query_type')}")
     print(f"[Router] Reasoning  : {classification.get('reasoning')}")

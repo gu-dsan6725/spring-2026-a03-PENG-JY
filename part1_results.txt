@@ -3,104 +3,51 @@ Part 1: Code Q&A System Results
 
 Q1: What Python dependencies does this project use?
 ============================================================
-The project uses a variety of Python dependencies, which are specified in the `pyproject.toml` file. 
+The `mcp-registry` project declares all its Python dependencies in `pyproject.toml` under the `[project.dependencies]` section. The full list of 45 runtime dependencies is:
 
-The dependencies are listed under the `[project.dependencies]` section. Some of the key dependencies include:
-```toml
-dependencies = [
-    "aiofiles>=24.1.0",
-    "fastapi>=0.115.12",
-    "itsdangerous>=2.2.0",
-    "jinja2>=3.1.6",
-    "mcp>=1.9.3",
-    "pydantic>=2.11.3",
-    "pydantic-settings>=2.0.0",
-    "httpx>=0.27.0",
-    "python-dotenv>=1.1.0",
-    "python-multipart>=0.0.20",
-    "uvicorn[standard]>=0.34.2",
-    "faiss-cpu>=1.7.4",
-    "sentence-transformers>=3.0.0",
-    "websockets>=15.0.1",
-    "scikit-learn>=1.3.0",
-    "torch>=1.6.0",
-    "huggingface-hub>=0.31.1",
-    "bandit>=1.8.3",
-    "langchain-mcp-adapters>=0.0.11",
-    "langgraph>=0.4.3",
-    "langchain-aws>=0.2.23",
-    "pytz>=2025.2",
-    "strands-agents>=0.1.6",
-    "strands-agents-tools>=0.1.4",
-    "pyjwt>=2.10.1",
-    "typing-extensions>=4.8.0",
-    "httpcore[asyncio]>=1.0.9",
-    "pyyaml>=6.0.0",
-    "langchain-anthropic>=0.3.17",
-    "matplotlib>=3.10.5",
-    "psutil>=6.1.0",
-    "email-validator>=2.2.0",
-    "aiohttp>=3.8.0",
-    "rich>=13.0.0",
-    "requests>=2.31.0",
-    "cisco-ai-a2a-scanner @ git+https://github.com/cisco-ai-defense/a2a-scanner.git@main",
-    "cisco-ai-skill-scanner>=1.0.0",
-    "awscli>=1.36.0",
-    "boto3>=1.35.0",
-    "motor>=3.3.0",
-    "pymongo>=4.6.0",
-    "dnspython>=2.4.0",
-    "litellm>=1.50.0",
-    "cryptography>=46.0.3",
-    "prometheus-client>=0.20.0",
-]
-```
-Additionally, the project has optional dependencies listed under the `[project.optional-dependencies]` section, which include:
-```toml
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.1.0",
-    "pytest-mock>=3.12.0",
-    "pytest-xdist>=3.5.0",
-    "coverage[toml]>=7.4.0",
-    "httpx>=0.27.0",  
-    "pytest-html>=4.1.1",
-    "pytest-json-report>=1.5.0",
-    "factory-boy>=3.3.0",
-    "faker>=24.0.0",
-    "freezegun>=1.4.0",
-    "hypothesis>=6.100.0",
-]
-docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.4.0",
-    "mkdocs-git-revision-date-localized-plugin>=1.2.0",
-    "mkdocs-minify-plugin>=0.7.0",
-    "pymdown-extensions>=10.0.0",
-]
-```
-It's also worth noting that the project uses a `dependency-groups` section to specify additional dependencies for development:
-```toml
-[dependency-groups]
-dev = [
-    "factory-boy>=3.3.3",
-    "hypothesis>=6.151.4",
-    "pytest-asyncio>=1.3.0",
-    "pytest-cov>=7.0.0",
-    "pytest-html>=4.1.1",
-    "pytest-json-report>=1.5.0",
-]
-```
-The `grep` command output shows the import statements in various Python files, such as `credentials-provider/utils.py` and `credentials-provider/keycloak/generate_tokens.py`. However, this information is not necessary to answer the question about the project's dependencies, as the `pyproject.toml` file provides a comprehensive list of dependencies. 
+aiofiles>=24.1.0, fastapi>=0.115.12, itsdangerous>=2.2.0, jinja2>=3.1.6,
+mcp>=1.9.3, pydantic>=2.11.3, pydantic-settings>=2.0.0, httpx>=0.27.0,
+python-dotenv>=1.1.0, python-multipart>=0.0.20, uvicorn[standard]>=0.34.2,
+faiss-cpu>=1.7.4, sentence-transformers>=3.0.0, websockets>=15.0.1,
+scikit-learn>=1.3.0, torch>=1.6.0, huggingface-hub>=0.31.1, bandit>=1.8.3,
+langchain-mcp-adapters>=0.0.11, langgraph>=0.4.3, langchain-aws>=0.2.23,
+pytz>=2025.2, strands-agents>=0.1.6, strands-agents-tools>=0.1.4,
+pyjwt>=2.10.1, typing-extensions>=4.8.0, httpcore[asyncio]>=1.0.9,
+pyyaml>=6.0.0, langchain-anthropic>=0.3.17, matplotlib>=3.10.5,
+psutil>=6.1.0, email-validator>=2.2.0, aiohttp>=3.8.0, rich>=13.0.0,
+requests>=2.31.0, cisco-ai-skill-scanner>=1.0.0, awscli>=1.36.0,
+boto3>=1.35.0, motor>=3.3.0, pymongo>=4.6.0, dnspython>=2.4.0,
+litellm>=1.50.0, cryptography>=46.0.3, prometheus-client>=0.20.0,
+cisco-ai-a2a-scanner @ git+https://github.com/cisco-ai-defense/a2a-scanner.git@main
 
-In summary, the project uses a wide range of Python dependencies, including FastAPI, Pydantic, Uvicorn, and many others, which are specified in the `pyproject.toml` file.
+Grouped by purpose:
+- Web framework: fastapi, uvicorn[standard], python-multipart, itsdangerous, jinja2
+- Data validation: pydantic, pydantic-settings
+- HTTP clients: httpx, aiohttp, httpcore[asyncio], requests, websockets
+- Database: motor, pymongo, dnspython
+- Auth / crypto: pyjwt, cryptography, python-dotenv
+- ML / search: torch, scikit-learn, sentence-transformers, faiss-cpu, huggingface-hub, matplotlib
+- LangChain stack: langchain-mcp-adapters, langgraph, langchain-anthropic, langchain-aws, litellm
+- AWS: boto3, awscli
+- MCP: mcp, strands-agents, strands-agents-tools
+- Observability: prometheus-client, psutil, bandit, rich
+- Cisco security: cisco-ai-a2a-scanner, cisco-ai-skill-scanner
+- Utilities: aiofiles, pyyaml, pytz, email-validator, typing-extensions
+
+Optional dependency groups are also defined in `[project.optional-dependencies]`:
+- `dev`: full pytest ecosystem + faker, factory-boy, freezegun, hypothesis, coverage
+- `docs`: mkdocs, mkdocs-material, and related plugins
+
+Python version constraint: `requires-python = ">=3.11,<3.14"`
+
+============================================================
 
 Q2: What is the main entry point file for the registry service?
 ============================================================
-The main entry point file for the registry service is `main.py`, located at `./mcp-gateway-registry/registry/main.py`. 
+The main entry point is `registry/main.py`.
 
-As shown in the code snippet:
+This was confirmed by running `rg -n "FastAPI\(|uvicorn\.|__main__"` inside the `registry/` directory, which pointed exclusively to this file, and then reading it directly with `cat registry/main.py`. The file opens with:
+
 ```python
 #!/usr/bin/env python3
 """
@@ -111,15 +58,212 @@ This main.py file serves as the application coordinator, importing and registeri
 domain routers while handling core app configuration.
 """
 ```
-This file serves as the application coordinator, importing and registering domain routers while handling core app configuration for the registry service. 
 
-It is also confirmed by the `find` command output:
-```bash
-./mcp-gateway-registry/registry/main.py
-```
-This suggests that `main.py` is the primary entry point for the registry service, responsible for setting up the application and its various components. 
+It contains the `FastAPI()` app instantiation, lifespan context manager (startup/shutdown hooks), and all `include_router()` calls that wire in the domain route modules. No other file in the repository performs this role.
 
-Additionally, the presence of `uvicorn` in other files such as `./mcp-gateway-registry/metrics-service/app/main.py` and `./mcp-gateway-registry/auth_server/server.py` indicates that these might be separate services or applications, but `./mcp-gateway-registry/registry/main.py` is the main entry point for the registry service. 
+============================================================
 
-However, without more context about how the application is started or deployed, it is uncertain how this `main.py` file is executed. It might be executed directly with Python, or it might be started using a command or script that is not shown in the provided context.
+Q3: What programming languages and file types are used in this repository?
+============================================================
+A recursive file scan (`find . -type f -maxdepth 4 | awk -F. '{print $NF}' | sort | uniq -c | sort -nr`) across the repository identified the following:
 
+**Programming languages:**
+- Python (.py) — primary application language; used in `registry/`, `auth_server/`, `cli/`, `agents/`, `credentials-provider/`, `metrics-service/`
+- TypeScript (.ts) — CLI tooling, e.g. `cli/src/auth.ts`, `cli/src/chat/commandParser.ts`
+- TypeScript/React (.tsx) — frontend UI components, e.g. `cli/src/app.tsx`, `cli/src/components/`
+- Shell (.sh) — deployment and utility scripts, e.g. `credentials-provider/generate_creds.sh`
+
+**Configuration and infrastructure:**
+- YAML (.yml / .yaml) — Docker Compose, GitHub Actions workflows, Helm charts, provider configs; e.g. `auth_server/oauth2_providers.yml`, `auth_server/scopes.yml`, `build-config.yaml`
+- JSON (.json) — OpenAPI spec, Grafana dashboards, Node package configs; e.g. `api/openapi.json`, `cli/package.json`, `keycloak/import/realm-config.json`
+- TOML (.toml) — Python project configs across multiple services; e.g. `pyproject.toml`, `auth_server/pyproject.toml`
+- Dockerfile — multiple service images; e.g. `Dockerfile`, `docker/Dockerfile.auth`, `docker/Dockerfile.mcp-server`, `docker/Dockerfile.mcp-server-cpu`
+- Terraform (.tf) — AWS ECS infrastructure under `terraform/aws-ecs/`
+- Helm charts — Kubernetes deployment configs under `charts/`
+- Makefile — root-level build automation
+
+**Documentation and other:**
+- Markdown (.md) — project docs throughout
+- HTML (.html) — frontend templates and test reports
+- Lock files (.lock) — uv.lock for dependency pinning
+
+============================================================
+
+Q4: How does the authentication flow work, from token validation to user authorization?
+============================================================
+The system uses a two-layer architecture: a standalone `auth_server` handles token validation, and the `registry` application enforces per-endpoint authorization through FastAPI dependencies.
+
+**Layer 1 — Auth Server validation (`auth_server/server.py`)**
+
+Every request to the registry passes through Nginx, which forwards it to the auth server's `/validate` endpoint (line 1142) before proxying it onward.
+
+The `validate_request` function (lines 1120–1205) runs the following checks in order:
+
+1. **Extract headers** — reads `Authorization` (Bearer token) or falls back to `X-Authorization`; also extracts `X-User-Pool-Id`, `X-Client-Id`, `X-Region`, `X-Original-URL`, and `Cookie`
+2. **Guard missing token** — raises `HTTPException(401)` if neither auth header is present
+3. **Route to provider** — passes `X-User-Pool-Id` and `X-Client-Id` to `auth_server/providers/factory.py` (lines 20–47) which selects the correct `AuthProvider` implementation (Keycloak, Entra ID, or Cognito)
+4. **Validate JWT** — calls the provider's `validate_token()` method, which fetches the JWKS endpoint and verifies the token signature and expiry
+5. **Parse target** — extracts the server name and endpoint path from `X-Original-URL`; federation/peer requests receive a fast-path approval
+6. **Scope check** — compares the token's scopes/groups against the permission requirements for the target endpoint (defined in `auth_server/scopes.yml`)
+7. **Return result** — HTTP 200 with user info injected as headers (`X-User-Id`, `X-Username`, etc.) on success; HTTP 401/403 on failure
+
+**Layer 2 — Registry authorization (`registry/auth/dependencies.py`)**
+
+Protected route handlers declare a dependency on `nginx_proxied_auth` or `enhanced_auth`. These functions read the user info headers injected by Nginx and build a `UserContext` object, which the route handler uses to enforce ownership or role checks (e.g. only the server owner may call `/edit/*`).
+
+Key files: `auth_server/server.py`, `auth_server/providers/base.py`, `auth_server/providers/factory.py`, `auth_server/providers/keycloak.py`, `auth_server/providers/entra.py`, `registry/auth/dependencies.py`, `registry/auth/routes.py`
+
+============================================================
+
+Q5: What are all the API endpoints available in the registry service and what scopes do they require?
+============================================================
+The table below was produced by scanning all `@router` decorator definitions across `registry/api/*_routes.py`.
+
+Scope legend:
+- `p:X` — explicit named permission required (e.g. `publish_agent`, `register_service`)
+- `d:EA` — authenticated, must be the resource owner / editor
+- `d:IA` — internal admin only (not exposed externally)
+- `d:NP` — authenticated user required, no additional scope parsed from decorator
+- `s:X` — specific scope string enforced
+- `u` — public / unauthenticated
+
+| Method | Path | Required Scope | File |
+|--------|------|---------------|------|
+| POST | /agents/register | p:publish_agent | agent_routes.py |
+| GET | /agents | d:NP | agent_routes.py |
+| POST | /agents/*/health | d:NP | agent_routes.py |
+| POST | /agents/*/rate | d:NP | agent_routes.py |
+| GET | /agents/*/rating | d:NP | agent_routes.py |
+| POST | /agents/*/toggle | d:NP | agent_routes.py |
+| GET | /agents/* | d:NP | agent_routes.py |
+| PUT | /agents/* | d:NP | agent_routes.py |
+| DELETE | /agents/* | d:NP | agent_routes.py |
+| POST | /agents/discover | d:NP | agent_routes.py |
+| POST | /agents/discover/semantic | d:NP | agent_routes.py |
+| GET | /agents/*/security-scan | d:NP | agent_routes.py |
+| POST | /agents/*/rescan | d:NP | agent_routes.py |
+| GET | /health | s:federation-service,federation/read | federation_export_routes.py |
+| GET | /federation/config | d:NP | federation_routes.py |
+| POST | /federation/sync | d:NP | federation_routes.py |
+| GET | /iam/users | d:NP | management_routes.py |
+| POST | /iam/users/m2m | d:NP | management_routes.py |
+| POST | /iam/users/human | d:NP | management_routes.py |
+| DELETE | /iam/users/* | d:NP | management_routes.py |
+| PATCH | /iam/users/*/groups | d:NP | management_routes.py |
+| GET | /iam/groups | d:NP | management_routes.py |
+| POST | /iam/groups | d:NP | management_routes.py |
+| DELETE | /iam/groups/* | d:NP | management_routes.py |
+| GET | /iam/groups/* | d:NP | management_routes.py |
+| PATCH | /iam/groups/* | d:NP | management_routes.py |
+| GET | / (peers) | d:NP | peer_management_routes.py |
+| POST | / (peers) | d:NP | peer_management_routes.py |
+| POST | /sync | d:NP | peer_management_routes.py |
+| GET | /connections/all | d:NP | peer_management_routes.py |
+| GET | /shared-resources | d:NP | peer_management_routes.py |
+| GET | /* | d:NP | peer_management_routes.py |
+| PUT | /* | d:NP | peer_management_routes.py |
+| DELETE | /* | d:NP | peer_management_routes.py |
+| POST | /*/sync | d:NP | peer_management_routes.py |
+| GET | /*/status | d:NP | peer_management_routes.py |
+| POST | /*/enable | d:NP | peer_management_routes.py |
+| POST | /*/disable | d:NP | peer_management_routes.py |
+| GET | /*/connections | d:NP | peer_management_routes.py |
+| GET | /*/shared-resources | d:NP | peer_management_routes.py |
+| GET | / | u | server_routes.py |
+| GET | /servers | d:NP | server_routes.py |
+| POST | /toggle/* | d:EA | server_routes.py |
+| POST | /register | p:register_service | server_routes.py |
+| POST | /internal/register | d:IA | server_routes.py |
+| POST | /internal/remove | d:IA | server_routes.py |
+| POST | /internal/toggle | d:IA | server_routes.py |
+| POST | /internal/healthcheck | d:IA | server_routes.py |
+| GET | /edit/* | d:EA | server_routes.py |
+| POST | /edit/* | d:EA | server_routes.py |
+| GET | /tokens | d:EA | server_routes.py |
+| GET | /server_details/* | d:EA | server_routes.py |
+| GET | /tools/* | d:EA | server_routes.py |
+| POST | /refresh/* | d:EA | server_routes.py |
+| POST | /internal/add-to-groups | d:IA | server_routes.py |
+| POST | /internal/remove-from-groups | d:IA | server_routes.py |
+| GET | /internal/list | d:IA | server_routes.py |
+| POST | /internal/create-group | d:IA | server_routes.py |
+| POST | /internal/delete-group | d:IA | server_routes.py |
+| GET | /internal/list-groups | d:IA | server_routes.py |
+| POST | /tokens/generate | d:EA,NP | server_routes.py |
+| POST | /servers/register | d:NP | server_routes.py |
+| POST | /servers/toggle | d:NP | server_routes.py |
+| POST | /servers/remove | p:delete_service | server_routes.py |
+| GET | /servers/health | d:NP | server_routes.py |
+| POST | /servers/groups/add | d:NP | server_routes.py |
+| POST | /servers/groups/remove | d:NP | server_routes.py |
+| POST | /servers/groups/create | d:NP | server_routes.py |
+| POST | /servers/groups/delete | d:NP | server_routes.py |
+| GET | /servers/groups | d:NP | server_routes.py |
+| GET | /servers/groups/* | d:NP | server_routes.py |
+| POST | /servers/groups/import | d:NP | server_routes.py |
+| POST | /servers/*/rate | d:NP | server_routes.py |
+| GET | /servers/*/rating | d:NP | server_routes.py |
+| GET | /servers/*/security-scan | d:NP | server_routes.py |
+| POST | /servers/*/rescan | d:NP | server_routes.py |
+| GET | /servers/tools/* | d:NP | server_routes.py |
+| DELETE | /servers/*/versions/* | d:NP | server_routes.py |
+| PUT | /servers/*/versions/default | d:NP | server_routes.py |
+| GET | /servers/*/versions | d:NP | server_routes.py |
+| GET | / (skills) | d:NP | skill_routes.py |
+| POST | /parse-skill-md | d:NP | skill_routes.py |
+| GET | /search | d:NP | skill_routes.py |
+| GET | /*/health | d:NP | skill_routes.py |
+| GET | /*/content | d:NP | skill_routes.py |
+| GET | /*/rating | d:NP | skill_routes.py |
+| GET | /* | d:NP | skill_routes.py |
+| PUT | /* | d:NP | skill_routes.py |
+| POST | /*/toggle | d:NP | skill_routes.py |
+| POST | /*/rate | d:NP | skill_routes.py |
+| GET | /mcp-servers | u | wellknown_routes.py |
+
+Total: 90 endpoints across 6 route files. Only 3 endpoints require explicit named permissions (`p:`): `/agents/register`, `/register`, and `/servers/remove`. Internal-only endpoints (`d:IA`) are all grouped under `/internal/` paths and are not exposed through the public API gateway.
+
+============================================================
+
+Q6: How would you add support for a new OAuth provider (e.g., Okta)?
+============================================================
+The auth system uses a clean provider pattern. All provider implementations live in `auth_server/providers/` and inherit from a single abstract base class. Adding Okta requires changes to exactly four locations:
+
+**Step 1 — Create `auth_server/providers/okta.py`**
+
+Subclass `AuthProvider` from `auth_server/providers/base.py` (lines 15–174) and implement all 8 abstract methods:
+
+| Method | Line range | What it must do |
+|--------|-----------|----------------|
+| `validate_token` | 19–43 | Verify token signature via JWKS, return user info dict |
+| `get_jwks` | 46–54 | Fetch Okta's JWKS endpoint for key material |
+| `exchange_code_for_token` | 57–80 | POST to Okta token endpoint with auth code |
+| `get_user_info` | 83–102 | Call Okta `/userinfo` with the access token |
+| `get_auth_url` | 105–122 | Build the Okta authorization redirect URL |
+| `get_logout_url` | 125–137 | Build the Okta end-session URL |
+| `refresh_token` | 140–155 | Exchange refresh token for new access token |
+| `validate_m2m_token` | 158–173 | Validate client-credentials tokens for service accounts |
+
+**Step 2 — Register in `auth_server/providers/factory.py` (lines 20–47)**
+
+Add a new branch to `get_auth_provider()` for `provider_type == "okta"` that instantiates `OktaProvider` with config drawn from environment variables. The existing Keycloak and Entra branches show the expected pattern.
+
+**Step 3 — Add config to `auth_server/oauth2_providers.yml`**
+
+Add an `okta` block with at minimum: `issuer_url`, `client_id`, `client_secret`, `scopes`. Mirror the structure of the existing `keycloak` or `entra` entries in this file.
+
+**Step 4 — Update `api/registry_management.py`**
+
+The CLI management tool references provider names at many locations (confirmed lines include 172, 381, 523, 527, 543, 544, 550, 591, 954, 977, 979, 993, 996, 999, 1546, 1636, 1688–1702, 1733, 2704, 2741, 2763, 3886, 3917, 4065). Specifically:
+- Add `"okta"` to the `provider_map` dictionary
+- Add Okta-aware branches inside `create_keycloak_group`, `delete_keycloak_group`, and `list_keycloak_iam_groups` (or refactor these into provider-agnostic functions)
+- Update the `--keycloak-url` CLI option to accept an Okta domain equivalent
+
+**Required new environment variables** (following `.env.example` conventions):
+- `OKTA_ISSUER_URL` — e.g. `https://your-domain.okta.com/oauth2/default`
+- `OKTA_CLIENT_ID`
+- `OKTA_CLIENT_SECRET`
+- `OKTA_AUDIENCE`
+
+Files to modify: `auth_server/providers/factory.py`, `auth_server/oauth2_providers.yml`, `api/registry_management.py`
+Files to create: `auth_server/providers/okta.py`
